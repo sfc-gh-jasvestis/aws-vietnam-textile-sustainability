@@ -1,0 +1,122 @@
+{
+  "title": "Sustainability Compliance",
+  "duration": "4 minutes",
+  "thesis": "Snowflake delivers sustainability compliance intelligence for Vietnamese textile & garment - Dynamic Tables maintain real-time dashboards, ML.FORECAST projects key metrics, and Cortex AI generates recommendations",
+  "tabs": [
+    {
+      "id": "overview",
+      "persona": {
+        "name": "Nguyen Thi Linh",
+        "role": "VP Sustainability",
+        "avatar": "\ud83d\udc68\u200d\ud83d\udcbc"
+      },
+      "talking_points": [
+        "Comprehensive sustainability compliance monitoring in Hai Duong & Nam Dinh.",
+        "Real-time KPIs via Dynamic Tables.",
+        "ML early warning flags deviations before impact."
+      ],
+      "show": [
+        "Primary KPI dashboard",
+        "Real-time indicators",
+        "ML flags"
+      ],
+      "call_out": "Real-time sustainability compliance intelligence with ML early warning",
+      "transition": {
+        "next_tab": "analytics",
+        "line": "Let us drill into details."
+      }
+    },
+    {
+      "id": "analytics",
+      "persona": {
+        "name": "Pham Van Hieu",
+        "role": "Environmental Engineer",
+        "avatar": "\ud83d\udc69\u200d\ud83d\udcbc"
+      },
+      "talking_points": [
+        "Detailed trend analysis across parameters.",
+        "ML.FORECAST projects 30-90 days forward.",
+        "Optimization opportunities identified."
+      ],
+      "show": [
+        "Trend charts",
+        "Forecast overlay",
+        "Optimization table"
+      ],
+      "call_out": "ML-projected trends with actionable optimization",
+      "transition": {
+        "next_tab": "intelligence",
+        "line": "Let us see AI recommendations."
+      }
+    },
+    {
+      "id": "intelligence",
+      "persona": {
+        "name": "Pham Van Hieu",
+        "role": "Environmental Engineer",
+        "avatar": "\ud83d\udc69\u200d\ud83d\udcbc"
+      },
+      "talking_points": [
+        "Cortex AI generates actionable recommendations.",
+        "100 documents searchable via Cortex Search.",
+        "Automated event classification and triage."
+      ],
+      "show": [
+        "AI recommendations",
+        "Search demo",
+        "Classification results"
+      ],
+      "call_out": "AI recommendations + searchable knowledge",
+      "transition": {
+        "next_tab": "ask-ai",
+        "line": "Now let the executive ask directly."
+      }
+    },
+    {
+      "id": "ask-ai",
+      "persona": {
+        "name": "Nguyen Thi Linh",
+        "role": "VP Sustainability",
+        "avatar": "\ud83d\udc68\u200d\ud83d\udcbc"
+      },
+      "talking_points": [
+        "Nguyen Thi Linh asks questions in natural language.",
+        "Cortex Analyst writes SQL, returns answers.",
+        "Advisory mode provides strategic guidance."
+      ],
+      "show": [
+        "Type question",
+        "Show SQL + results",
+        "Advisory mode"
+      ],
+      "call_out": "Two AI modes: analytics + advisory",
+      "transition": {
+        "next_tab": "architecture",
+        "line": "Every capability - native Snowflake."
+      }
+    },
+    {
+      "id": "architecture",
+      "persona": {
+        "name": "Nguyen Thi Linh",
+        "role": "VP Sustainability",
+        "avatar": "\ud83d\udc68\u200d\ud83d\udcbc"
+      },
+      "talking_points": [
+        "Six Snowflake + six AWS services.",
+        "Vietnam textile & garment among fastest growing in ASEAN.",
+        "Open Iceberg for partner access."
+      ],
+      "show": [
+        "Architecture diagram",
+        "Dual-build toggle",
+        "Data flow"
+      ],
+      "call_out": "One platform, native ML, open Iceberg",
+      "transition": {
+        "next_tab": "",
+        "line": "Snowflake and AWS for textile & garment."
+      }
+    }
+  ]
+}
