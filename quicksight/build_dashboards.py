@@ -3,7 +3,7 @@ QuickSight Dashboard Builder — AWS SEA Demo Template
 Programmatically creates a QuickSight dashboard connected to Snowflake via DIRECT_QUERY.
 
 Prerequisites:
-- AWS CLI configured with QuickSight access (account 018437500440, us-west-2)
+- AWS CLI configured with QuickSight access (account <YOUR_AWS_ACCOUNT_ID>, us-west-2)
 - Snowflake data source registered in QuickSight
 - Amazon Q enabled on the QuickSight account
 
@@ -16,7 +16,7 @@ import json
 import argparse
 from datetime import datetime
 
-ACCOUNT_ID = '018437500440'
+ACCOUNT_ID = '<YOUR_AWS_ACCOUNT_ID>'
 REGION = 'us-west-2'
 QS_NAMESPACE = 'default'
 
