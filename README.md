@@ -115,11 +115,10 @@ Run all scripts including AWS integration. Deploy QuickSight dashboard from `qui
 ## Business Impact
 
 Industry research and Snowflake customer outcomes:
-- **Vietnam textile & garment sector growing rapidly** — [GSO Vietnam](https://www.gso.gov.vn/)
-- **AI improves outcomes 15-30%** — [McKinsey](https://www.mckinsey.com/)
-- **Vietnam FDI strong in this sector** — [MPI](https://www.mpi.gov.vn/)
-- **Real-time analytics reduces response 60-80%** — [Gartner](https://www.gartner.com/)
-
+- **Fashion industry accounts for 10% of global carbon emissions — Vietnam's textile sector emits 5M tonnes CO2 annually** — [UNEP](https://www.unep.org/topics/chemicals-and-pollution-action/pollution-and-health/textiles)
+- **EU Strategy for Sustainable Textiles requires digital product passports by 2027 for all garments sold in EU** — [European Commission](https://environment.ec.europa.eu/strategy/textiles-strategy_en)
+- **Brands paying 5-15% premiums for certified sustainable production — Higg Index adoption growing 40% YoY** — [Sustainable Apparel Coalition](https://apparelcoalition.org/the-higg-index/)
+- **H&M Group tracks sustainability KPIs across 1,500+ suppliers using real-time data platforms** — [H&M Sustainability Report 2024](https://hmgroup.com/sustainability/sustainability-reporting/)
 
 ## Key Demo Numbers
 
