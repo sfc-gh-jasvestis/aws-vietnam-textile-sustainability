@@ -119,6 +119,7 @@ Industry research and Snowflake customer outcomes:
 - **EU Strategy for Sustainable Textiles requires digital product passports by 2027 for all garments sold in EU** — [European Commission](https://environment.ec.europa.eu/strategy/textiles-strategy_en)
 - **Brands paying 5-15% premiums for certified sustainable production — Higg Index adoption growing 40% YoY** — [Cascale (formerly SAC)](https://cascale.org/the-higg-index/)
 - **H&M Group tracks sustainability KPIs across 1,500+ suppliers using real-time data platforms** — [H&M Sustainability Report 2024](https://hmgroup.com/sustainability/sustainability-reporting/)
+- **Under Armour** (Snowflake customer): consolidated global supply chain data on Snowflake, reducing time-to-insight from weeks to minutes across 35K retail doors -- [snowflake.com/customers/under-armour](https://www.snowflake.com/en/customers/all-customers/case-study/under-armour/)
 
 ## Key Demo Numbers
 
