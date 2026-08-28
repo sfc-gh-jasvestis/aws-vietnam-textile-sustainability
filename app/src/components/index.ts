@@ -5,3 +5,4 @@ export { AskAI } from './AskAI';
 export { ActionMemo } from './ActionMemo';
 export { DemoGuide } from './DemoGuide';
 export { AppLayout } from './AppLayout';
+export { GeoMap } from './GeoMap';
