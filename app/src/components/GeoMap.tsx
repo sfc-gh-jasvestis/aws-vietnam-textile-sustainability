@@ -151,7 +151,7 @@ export function GeoMap({ country, markers = [], routes = [], title, height = 300
 
           {/* Markers */}
           {markers.map((marker, i) => {
-            const pos = resolveCity(marker.label) || [marker.lng, marker.lat];
+            const pos = resolveCity(marker.label) || [marker.lng || 0, marker.lat || 0];
             const color = COLOR_MAP[marker.color || 'blue'];
             const size = SIZE_MAP[marker.size || 'md'];
             return (
