@@ -153,7 +153,7 @@ export default function HomePage() {
           <div className="rounded border border-orange-200 bg-orange-50 p-4">
             <h3 className="text-sm font-bold text-orange-800">AWS Services</h3>
             <ul className="mt-2 space-y-1 text-sm text-orange-700">
-              <li>• Amazon Bedrock (Claude)</li>
+              <li>• Amazon S3 (Strategy Docs)</li>
               <li>• Amazon S3 + Kinesis</li>
               <li>• Amazon SNS</li>
               <li>• Amazon QuickSight + Q</li>
@@ -170,7 +170,7 @@ export default function HomePage() {
           </div>
           <div className="rounded border border-violet-200 bg-violet-50 p-3">
             <h4 className="text-sm font-bold text-violet-800">Full AWS + Snowflake</h4>
-            <p className="mt-1 text-xs text-violet-700">Bedrock, S3, Kinesis, SNS, QuickSight integrated.</p>
+            <p className="mt-1 text-xs text-violet-700">S3, Kinesis, SNS, QuickSight integrated with Snowflake Cortex AI.</p>
           </div>
         </div>
       </div>
