@@ -62,8 +62,8 @@ const COUNTRY_PATHS: Record<string, { path: string; viewBox: string; cities: Rec
 };
 
 interface MapMarker {
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
   label: string;
   value?: string;
   color?: 'green' | 'amber' | 'red' | 'blue' | 'purple';
