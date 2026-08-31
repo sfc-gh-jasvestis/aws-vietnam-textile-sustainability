@@ -8,6 +8,7 @@ import { DataTable } from '@/components/DataTable';
 import { AskAI } from '@/components/AskAI';
 import { ActionMemo } from '@/components/ActionMemo';
 import { GeoMap } from '@/components/GeoMap';
+import { ArchitectureDiagram } from '@/components/ArchitectureDiagram';
 
 interface DemoNarrative {
   title: string;
@@ -41,17 +42,17 @@ export default function HomePage() {
         <KPICard title="Carbon Footprint" value="-12% YoY" status="neutral" />
         <KPICard title="Certifications" value="8" status="neutral" />
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="lg:col-span-1">
           <GeoMap
             country="vietnam"
             markers={[{"label": "Ho Chi Minh City", "value": "HQ + export", "color": "blue", "size": "lg"}, {"label": "Binh Duong", "value": "Factory cluster", "color": "green", "size": "lg"}, {"label": "Long An", "value": "Dyeing & finishing", "color": "amber", "size": "md"}, {"label": "Hanoi", "value": "Northern factories", "color": "green", "size": "md"}, {"label": "Da Nang", "value": "Central hub", "color": "green", "size": "sm"}]}
             routes={[{"from": "Binh Duong", "to": "Ho Chi Minh City", "color": "#29B5E8"}]}
             title="Geographic Overview"
-            height={280}
+            height={400}
           />
         </div>
-        <div className="lg:col-span-2 grid grid-cols-1 gap-4">
+        <div className="lg:col-span-1 grid grid-cols-1 gap-4">
       <div className="grid grid-cols-1 gap-4 grid-cols-1">
         <Chart
           data={data?.timeseries || [{ period: 'Loading', value: 0 }]}
@@ -134,7 +135,7 @@ export default function HomePage() {
           'Show progress against SBTi 2030 targets',
           'What is the ROI timeline for sustainability investments?',
         ]}
-        mode="both"
+        mode="sql"
         onSubmit={async (question, mode) => {
           return {
             answer: `[Demo Mode] Response to: "${question}" (${mode} mode). Connect to Snowflake for live data.`,
@@ -146,48 +147,10 @@ export default function HomePage() {
   );
 
   const architectureTab = (
-    <div className="space-y-6">
-      <div className="rounded-lg border border-slate-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-slate-900">Architecture</h2>
-        <p className="mb-4 text-sm text-slate-600">
-          This demo runs on Snowflake with optional AWS integration. See the README for the full architecture diagram.
-        </p>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded border border-blue-200 bg-blue-50 p-4">
-            <h3 className="text-sm font-bold text-blue-800">Snowflake Features</h3>
-            <ul className="mt-2 space-y-1 text-sm text-blue-700">
-              <li>• Dynamic Tables (5-min refresh)</li>
-              <li>• ML Functions (Forecast + Anomaly)</li>
-              <li>• Cortex Search + Agent</li>
-              <li>• Semantic View + Intelligence</li>
-              <li>• Alerts + Notifications</li>
-            </ul>
-          </div>
-          <div className="rounded border border-orange-200 bg-orange-50 p-4">
-            <h3 className="text-sm font-bold text-orange-800">AWS Services</h3>
-            <ul className="mt-2 space-y-1 text-sm text-orange-700">
-              <li>• Amazon S3 (Strategy Docs)</li>
-              <li>• Amazon S3 + Kinesis</li>
-              <li>• Amazon SNS</li>
-              <li>• Amazon QuickSight + Q</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      <div className="rounded-lg border border-slate-200 bg-white p-6">
-        <h2 className="mb-2 text-lg font-bold text-slate-900">Build Modes</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="rounded border border-emerald-200 bg-emerald-50 p-3">
-            <h4 className="text-sm font-bold text-emerald-800">Snowflake Only</h4>
-            <p className="mt-1 text-xs text-emerald-700">All features run natively in Snowflake. No AWS dependencies.</p>
-          </div>
-          <div className="rounded border border-violet-200 bg-violet-50 p-3">
-            <h4 className="text-sm font-bold text-violet-800">Full AWS + Snowflake</h4>
-            <p className="mt-1 text-xs text-violet-700">S3, Kinesis, SNS, QuickSight integrated with Snowflake Cortex AI.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ArchitectureDiagram
+      snowflakeFeatures={['Dynamic Tables (5-min refresh)', 'ML Functions (Forecast + Anomaly)', 'Cortex Search + Agent', 'Semantic View + Intelligence', 'Alerts + Notifications']}
+      awsServices={[{ name: 'Amazon S3', role: 'Strategy Docs' }, { name: 'Amazon S3 + Kinesis', role: 'Integration' }, { name: 'Amazon SNS', role: 'Integration' }, { name: 'Amazon QuickSight + Q', role: 'Integration' }]}
+    />
   );
 
   const tabs = [
@@ -201,7 +164,6 @@ export default function HomePage() {
   return (
     <AppLayout
       title={title}
-      subtitle="Powered by Snowflake + AWS"
       tabs={tabs}
       narrative={narrative}
     />
