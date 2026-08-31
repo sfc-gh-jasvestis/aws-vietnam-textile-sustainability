@@ -3,6 +3,21 @@ import snowflake from 'snowflake-sdk';
 let connection: any = null;
 
 /**
+ * Reads an environment variable at request time.
+ *
+ * Next.js/webpack statically replaces literal `process.env.FOO` member
+ * expressions at build time. Because these values only exist inside the SPCS
+ * container at runtime, that inlining baked empty strings into the image and
+ * every connection failed with "Invalid account". Looking the name up through
+ * a computed key on globalThis defeats that substitution.
+ */
+function env(name: string): string {
+  const proc: any = (globalThis as any).process;
+  if (!proc || !proc.env) return '';
+  return proc.env[name] || '';
+}
+
+/**
  * Reads the OAuth token that Snowpark Container Services writes into the
  * container. Snowflake refreshes this file every few minutes, so it must be
  * read at connect time rather than cached at module load.
@@ -14,27 +29,29 @@ function getOAuthToken(): string {
     return fs.readFileSync('/snowflake/session/token', 'utf8').trim();
   } catch {
     // Not running in SPCS - fall back to an explicitly supplied token.
-    return process.env.SNOWFLAKE_TOKEN || '';
+    return env('SNOWFLAKE_TOKEN');
   }
 }
 
 export async function getConnection() {
   if (connection) return connection;
 
-  const token = getOAuthToken();
-
-  connection = snowflake.createConnection({
+  const options: Record<string, any> = {
     // SPCS injects these. The OAuth token is only valid when paired with host.
-    account: process.env.SNOWFLAKE_ACCOUNT || '',
-    host: process.env.SNOWFLAKE_HOST || '',
-    database: process.env.SNOWFLAKE_DATABASE || process.env.DATABASE || '',
-    schema: process.env.SNOWFLAKE_SCHEMA || process.env.SCHEMA || 'CURATED',
-    // Not injected by SPCS - comes from the service QUERY_WAREHOUSE or env.
-    warehouse: process.env.SNOWFLAKE_WAREHOUSE || process.env.WAREHOUSE || '',
+    account: env('SNOWFLAKE_ACCOUNT'),
+    host: env('SNOWFLAKE_HOST'),
+    database: env('SNOWFLAKE_DATABASE') || env('DATABASE'),
+    schema: env('SNOWFLAKE_SCHEMA') || env('SCHEMA') || 'CURATED',
     authenticator: 'OAUTH',
-    token,
+    token: getOAuthToken(),
     clientSessionKeepAlive: true,
-  } as any);
+  };
+
+  // Not injected by SPCS. Omit entirely so the service QUERY_WAREHOUSE applies.
+  const warehouse = env('SNOWFLAKE_WAREHOUSE') || env('WAREHOUSE');
+  if (warehouse) options.warehouse = warehouse;
+
+  connection = snowflake.createConnection(options as any);
 
   return new Promise((resolve, reject) => {
     connection.connect((err: any, conn: any) => {
