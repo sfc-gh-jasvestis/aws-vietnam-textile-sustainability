@@ -55,7 +55,7 @@ export default function HomePage() {
         <div className="lg:col-span-1 grid grid-cols-1 gap-4">
       <div className="grid grid-cols-1 gap-4 grid-cols-1">
         <Chart
-          data={data?.timeseries || (() => { const d = []; const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const base = 120; for (let i = 0; i < 12; i++) d.push({ period: months[i], value: Math.round(base + Math.sin(i/2)*40 + (Math.random()*20-10)) }); return d; })()}
+          data={data?.timeseries || [{ period: 'Jan', value: 112 }, { period: 'Feb', value: 118 }, { period: 'Mar', value: 135 }, { period: 'Apr', value: 148 }, { period: 'May', value: 156 }, { period: 'Jun', value: 142 }, { period: 'Jul', value: 138 }, { period: 'Aug', value: 151 }, { period: 'Sep', value: 144 }, { period: 'Oct', value: 132 }, { period: 'Nov', value: 121 }, { period: 'Dec', value: 115 }]}
           type="line"
           xKey="period"
           yKeys={[{ key: 'value', name: 'm³ (K)' }]}
