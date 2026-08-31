@@ -121,19 +121,19 @@ export default function HomePage() {
                 subject: 'Urgent: Operational Action Required',
                 body: `Dear Leadership Team,\n\nBased on our analysis of the latest operational data, I am writing to recommend immediate action on the following critical items.\n\nKey Findings:\n- Performance metrics indicate a deviation from target KPIs in several areas\n- Predictive models suggest these trends will continue without intervention\n- Estimated impact: 12-15% improvement in efficiency if addressed within 2 weeks\n\nI recommend we schedule a review meeting this week to align on next steps.\n\nBest regards`,
                 urgency: 'HIGH' as const,
-                actions: 'Achieve ZDHC Level-3 for Binh Duong dyeing facility', 'Install solar panels at Long An factory (ROI 4.2 yrs)', 'Prepare Higg FEM self-assessment for all factories',
+                actions: ['Achieve ZDHC Level-3 for Binh Duong dyeing facility', 'Install solar panels at Long An factory (ROI 4.2 yrs)', 'Prepare Higg FEM self-assessment for all factories'],
               },
               {
                 subject: 'Weekly Performance Summary & Recommendations',
                 body: `Dear Team,\n\nPlease find below the AI-generated weekly performance summary.\n\nHighlights:\n- Overall performance trending 8% above quarterly targets\n- Three areas identified for optimization with potential 20% cost savings\n- New anomaly patterns detected that warrant monitoring\n\nRecommended next steps are outlined below. Please review and confirm priority assignments by end of week.\n\nRegards`,
                 urgency: 'MEDIUM' as const,
-                actions: 'Achieve ZDHC Level-3 for Binh Duong dyeing facility', 'Install solar panels at Long An factory (ROI 4.2 yrs)', 'Prepare Higg FEM self-assessment for all factories',
+                actions: ['Achieve ZDHC Level-3 for Binh Duong dyeing facility', 'Install solar panels at Long An factory (ROI 4.2 yrs)', 'Prepare Higg FEM self-assessment for all factories'],
               },
               {
                 subject: 'Strategic Initiative: Data-Driven Optimization',
                 body: `Dear Stakeholders,\n\nOur AI analysis has identified a significant opportunity for operational optimization.\n\nExecutive Summary:\n- Current utilization rate: 78% (target: 90%)\n- Root cause analysis points to 3 primary factors\n- Projected ROI of recommended changes: 2.4x within 6 months\n\nThe attached data supports a phased implementation approach starting with the highest-impact items.\n\nPlease advise on scheduling a planning session.\n\nBest regards`,
                 urgency: 'HIGH' as const,
-                actions: 'Achieve ZDHC Level-3 for Binh Duong dyeing facility', 'Install solar panels at Long An factory (ROI 4.2 yrs)', 'Prepare Higg FEM self-assessment for all factories',
+                actions: ['Achieve ZDHC Level-3 for Binh Duong dyeing facility', 'Install solar panels at Long An factory (ROI 4.2 yrs)', 'Prepare Higg FEM self-assessment for all factories'],
               },
             ];
             return memos[Math.floor(Math.random() * memos.length)];
