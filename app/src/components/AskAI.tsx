@@ -103,7 +103,7 @@ export function AskAI({ title = 'Ask AI', placeholder, sampleQuestions, mode, on
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder={placeholder || `Ask a question (${activeMode === 'sql' ? 'SQL-based' : 'strategic advice'})...`}
+            placeholder={placeholder || 'Ask a question...'}
             className="flex-1 rounded border border-slate-300 px-3 py-2 text-sm focus:border-snowflake-blue focus:outline-none"
           />
           <button
