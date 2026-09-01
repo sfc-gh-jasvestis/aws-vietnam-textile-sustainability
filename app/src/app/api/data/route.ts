@@ -40,6 +40,15 @@ export async function GET() {
   try {
     const metric = await discoverMetricColumns();
 
+    // KPI_SUMMARY is one row per KPI card, pre-formatted for display. It only
+    // exists on demos whose seed data has been regenerated, so a failure here
+    // must not take down the charts - fall back to an empty list.
+    const kpiCards = await executeQuery<{ TITLE: string; DISPLAY: string; STATUS: string }>(`
+      SELECT TITLE, DISPLAY, STATUS
+      FROM ${SCHEMA}.KPI_SUMMARY
+      ORDER BY SORT_ORDER
+    `).catch(() => []);
+
     const [kpiRows, trendRows, regionRows, detailRows, categoryRows, entityRows] = await Promise.all([
       executeQuery<Record<string, number>>(`
         SELECT COUNT(DISTINCT ENTITY_ID) AS TOTAL_ENTITIES,
@@ -96,6 +105,11 @@ export async function GET() {
 
     return NextResponse.json({
       kpis: kpiRows[0] || {},
+      kpiCards: kpiCards.map((r) => ({
+        title: r.TITLE,
+        value: r.DISPLAY,
+        status: r.STATUS,
+      })),
       metricName: prettyMetricName(metric.perf),
       timeseries: trendRows.map((r) => ({ period: r.PERIOD, value: Number(r.VALUE) })),
       categories: regionRows.map((r) => ({ category: r.CATEGORY, count: Number(r.COUNT) })),
