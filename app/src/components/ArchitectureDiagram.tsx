@@ -16,8 +16,9 @@ interface FlowEdge {
 
 interface ArchitectureDiagramProps {
   title?: string;
-  snowflakeFeatures: string[];
-  awsServices: { name: string; role: string }[];
+  // Optional so a page can render the diagram without restating the stack.
+  snowflakeFeatures?: string[];
+  awsServices?: { name: string; role: string }[];
   nodes?: FlowNode[];
   edges?: FlowEdge[];
 }
@@ -52,10 +53,25 @@ const DEFAULT_EDGES: FlowEdge[] = [
   { from: 'ml', to: 'sns' },
 ];
 
+const DEFAULT_SNOWFLAKE_FEATURES = [
+  'Dynamic Tables (incremental refresh)',
+  'ML Functions (Forecast + Anomaly)',
+  'Cortex Search + Agent',
+  'Semantic View + Intelligence',
+  'Alerts + Notifications',
+];
+
+const DEFAULT_AWS_SERVICES = [
+  { name: 'Amazon S3', role: 'Source Documents' },
+  { name: 'Amazon Kinesis', role: 'Streaming Ingest' },
+  { name: 'Amazon SNS', role: 'Alerting' },
+  { name: 'Amazon QuickSight + Q', role: 'BI Consumption' },
+];
+
 export function ArchitectureDiagram({
   title = 'Architecture',
-  snowflakeFeatures,
-  awsServices,
+  snowflakeFeatures = DEFAULT_SNOWFLAKE_FEATURES,
+  awsServices = DEFAULT_AWS_SERVICES,
   nodes = DEFAULT_NODES,
   edges = DEFAULT_EDGES,
 }: ArchitectureDiagramProps) {
