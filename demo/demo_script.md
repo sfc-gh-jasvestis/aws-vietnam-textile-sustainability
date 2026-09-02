@@ -21,8 +21,8 @@ Snowflake delivers sustainability compliance intelligence for Vietnamese textile
 | Database | `VIETNAM_TEXTILE_SUSTAINABILITY` |
 | Service | `VIETNAM_TEXTILE_SUSTAINABILITY_APP` |
 | Compute pool | `SEA_DEMOS_VIETNAM_POOL` |
-| Dimension table | `RAW.DOCUMENTS` (20 rows) |
-| Fact table | `RAW.METRICS` (250,000 rows, 90 days) |
+| Dimension table | `RAW.FACILITIES` (20 rows) |
+| Fact table | `RAW.COMPLIANCE_READINGS` (250,000 rows, 90 days) |
 | Curated layer | `CURATED.PERFORMANCE_SUMMARY`, `CURATED.TREND_ANALYSIS`, `CURATED.KPI_SUMMARY` |
 | Currency | VND (₫) |
 
@@ -43,7 +43,7 @@ original literal as a fallback, so it still renders if Snowflake is unreachable.
 | Card | Value | Backed by |
 |---|---|---|
 | Recycled Content | `34%` | average per event |
-| Water Usage (MTD) | `842K m³` | total across Documents |
+| Water Usage (MTD) | `842K m³` | total across Facilities |
 | Carbon Footprint | `-12% YoY` | average per event |
 | Certifications | `8` | average per event |
 | Zero Discharge | `87%` | average per event |
