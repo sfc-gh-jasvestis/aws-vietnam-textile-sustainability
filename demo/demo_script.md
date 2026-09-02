@@ -1,105 +1,78 @@
-# Demo Script: Sustainability Compliance
-## ~4-Minute Recorded Walkthrough
-**Format**: Screen recording with voiceover
-**Target**: Customer meeting / booth loop / social share
-**Narrative**: "Snowflake delivers sustainability compliance intelligence for Vietnamese textile & garment - Dynamic Tables maintain real-time dashboards, ML.FORECAST projects key metrics, and Cortex AI generates recommendations"
-**Demo Mode**: Open app with `?demo=true` for presenter notes
+# Sustainability Compliance
 
----
+**Vietnam - Textile & Garment**
+Use case: Sustainability Compliance
 
-## Two Personas
+> Sustainability Compliance for Vietnam - ML.FORECAST and Dynamic Tables power real-time sustainability compliance intelligence for textile & garment in Hai Duong & Nam Dinh.
 
-| Persona | Role | Tool | What they care about |
-|---|---|---|---|
-| **Nguyen Thi Linh** | VP Sustainability | React App (SPCS) | Sustainability Compliance strategy, KPI tracking, operational decisions |
-| **Pham Van Hieu** | Environmental Engineer | Amazon QuickSight | Sustainability Compliance operations, analysis, reporting |
+## Why Snowflake
 
----
+Snowflake delivers sustainability compliance intelligence for Vietnamese textile & garment - Dynamic Tables maintain real-time dashboards, ML.FORECAST projects key metrics, and Cortex AI generates recommendations
 
-## What's Built
+- **ML.FORECAST for sustainability compliance** - Only demo for Vietnamese textile & garment
+- **ML.ANOMALY_DETECTION early warning** - Detects deviations before impact
+- **AI recommendations** - Cortex AI actionable guidance
+- **Vietnamese context** - Local names, VND economics
 
-| Layer | Component | Detail |
+## What is deployed
+
+| | |
+|---|---|
+| Database | `VIETNAM_TEXTILE_SUSTAINABILITY` |
+| Service | `VIETNAM_TEXTILE_SUSTAINABILITY_APP` |
+| Compute pool | `SEA_DEMOS_VIETNAM_POOL` |
+| Dimension table | `RAW.DOCUMENTS` (20 rows) |
+| Fact table | `RAW.METRICS` (250,000 rows, 90 days) |
+| Curated layer | `CURATED.PERFORMANCE_SUMMARY`, `CURATED.TREND_ANALYSIS`, `CURATED.KPI_SUMMARY` |
+| Currency | VND (₫) |
+
+Regions in play: Ho Chi Minh City, Hanoi, Binh Duong, Dong Nai, Can Tho
+Segments: Water Recycling, Chemical Compliance, Energy Intensity, Waste Diversion
+
+Dynamic tables are created suspended and refreshed on demand:
+
+```bash
+./refresh_demo_data.sh VIETNAM_TEXTILE_SUSTAINABILITY
+```
+
+## KPI cards
+
+Every card below is served live from `CURATED.KPI_SUMMARY`. The app keeps the
+original literal as a fallback, so it still renders if Snowflake is unreachable.
+
+| Card | Value | Backed by |
 |---|---|---|
-| **RAW** | 5 tables | OPERATIONS (100000), METRICS (500000), ASSETS (5000), EVENTS (200000), DOCUMENTS (100) |
-| **CURATED** | 4 Dynamic Tables | PERFORMANCE_DASHBOARD, TREND_ANALYTICS, FORECAST_INPUT, OPERATIONAL_RISK |
-| **ML** | ML.FORECAST + ML.ANOMALY_DETECTION | Forecasting + anomaly detection |
-| **AI** | COMPLETE, SUMMARIZE, AI_CLASSIFY | Classification + extraction |
-| **Search** | Cortex Search | 100 documents indexed |
-| **Agent** | TEXTILE_SUSTAINABILITY_AGENT | Semantic View + Search tools |
+| Recycled Content | `34%` | average per event |
+| Water Usage (MTD) | `842K m³` | total across Documents |
+| Carbon Footprint | `-12% YoY` | average per event |
+| Certifications | `8` | average per event |
+| Zero Discharge | `87%` | average per event |
+| Solar Coverage | `42%` | average per event |
+| Waste Diverted | `94%` | average per event |
 
 
----
+## Demo flow
 
-## The Story
+1. Overview
+2. Analytics
+3. AI Intelligence
+4. Ask AI
+5. Architecture
 
-Vietnam textile & garment faces increasing complexity in sustainability compliance. Decision-makers in Hai Duong & Nam Dinh need real-time intelligence and ML-powered recommendations.
+## Talking points
 
----
+- **100K operations** - tracked in Hai Duong & Nam Dinh
+- **500K metrics** - time-series data points
+- **5K assets** - monitored
+- **100 docs** - searchable
 
-## Script
+## Business impact
 
-### [0:00–0:45] OVERVIEW
-
-**Show**: Overview tab
-
-> "Comprehensive sustainability compliance monitoring in Hai Duong & Nam Dinh."
-
-**Action**: Primary KPI dashboard
-
-### [0:45–1:30] ANALYTICS
-
-**Show**: Analytics tab
-
-> "Detailed trend analysis across parameters."
-
-**Action**: Trend charts
-
-### [1:30–2:15] AI INTELLIGENCE
-
-**Show**: AI Intelligence tab
-
-> "Cortex AI generates actionable recommendations."
-
-**Action**: AI recommendations
-
-### [2:15–3:00] ASK AI
-
-**Show**: Ask AI tab
-
-> "Nguyen Thi Linh asks questions in natural language."
-
-**Action**: Type question
-
-### [3:00–3:45] ARCHITECTURE
-
-**Show**: Architecture tab
-
-> "Six Snowflake + six AWS services."
-
-**Action**: Architecture diagram
-
+- Vietnam textile & garment sector growing rapidly (GSO Vietnam)
+- AI improves outcomes 15-30% (McKinsey)
+- Vietnam FDI strong in this sector (MPI)
+- Real-time analytics reduces response 60-80% (Gartner)
 
 ---
-
-## Key Demo Differentiators
-
-1. **ML.FORECAST for sustainability compliance** — Only demo for Vietnamese textile & garment
-2. **ML.ANOMALY_DETECTION early warning** — Detects deviations before impact
-3. **AI recommendations** — Cortex AI actionable guidance
-4. **Vietnamese context** — Local names, VND economics
-
-
----
-
-## Demo Prep Checklist
-
-### Data Verification
-- [ ] `SELECT COUNT(*) FROM TEXTILE_SUSTAINABILITY.RAW.OPERATIONS` → 100000
-- [ ] `SELECT COUNT(*) FROM TEXTILE_SUSTAINABILITY.RAW.METRICS` → 500000
-
-### ML Model Verification
-- [ ] `SELECT COUNT(*) FROM TEXTILE_SUSTAINABILITY.ML.TEXTILE_SUSTAINABILITY_FORECAST_RESULTS` → >0
-
-### AI/Agent Verification
-- [ ] `SELECT COUNT(*) FROM TEXTILE_SUSTAINABILITY.AI.EVENT_CLASSIFICATION` → >0
-
+Generated from `generator/demo_specs/aws-vietnam-textile-sustainability.json`. Do not hand-edit: run
+`python3 generator/gen_repo_docs.py aws-vietnam-textile-sustainability` instead.
