@@ -3,6 +3,24 @@ import snowflake from 'snowflake-sdk';
 let connection: any = null;
 
 /**
+ * The in-flight connect attempt.
+ *
+ * `createConnection()` returns a handle SYNCHRONOUSLY, long before `connect()`
+ * completes. Guarding only on the handle therefore hands a not-yet-connected
+ * object to every concurrent caller. A single dashboard request fires a dozen
+ * parallel queries, which opened a dozen connections and silently failed some of
+ * them - the symptom was a route field quietly coming back empty.
+ *
+ * Memoising the PROMISE means all concurrent callers await the same connect.
+ */
+let connecting: Promise<any> | null = null;
+
+function resetConnection() {
+  connection = null;
+  connecting = null;
+}
+
+/**
  * Reads an environment variable at request time.
  *
  * Next.js/webpack statically replaces literal `process.env.FOO` member
@@ -35,6 +53,8 @@ function getOAuthToken(): string {
 
 export async function getConnection() {
   if (connection) return connection;
+  // Await an in-flight connect rather than starting a second one.
+  if (connecting) return connecting;
 
   const options: Record<string, any> = {
     // SPCS injects these. The OAuth token is only valid when paired with host.
@@ -51,19 +71,24 @@ export async function getConnection() {
   const warehouse = env('SNOWFLAKE_WAREHOUSE') || env('WAREHOUSE');
   if (warehouse) options.warehouse = warehouse;
 
-  connection = snowflake.createConnection(options as any);
+  const handle = snowflake.createConnection(options as any);
 
-  return new Promise((resolve, reject) => {
-    connection.connect((err: any, conn: any) => {
+  connecting = new Promise((resolve, reject) => {
+    handle.connect((err: any, conn: any) => {
       if (err) {
-        // Drop the handle so the next request retries with a fresh token.
-        connection = null;
+        // Drop everything so the next request retries with a fresh token.
+        resetConnection();
         reject(err);
       } else {
-        resolve(conn);
+        // Publish the handle only now that it is usable.
+        connection = conn || handle;
+        connecting = null;
+        resolve(connection);
       }
     });
   });
+
+  return connecting;
 }
 
 export async function executeQuery<T = Record<string, any>>(sql: string): Promise<T[]> {
@@ -74,7 +99,7 @@ export async function executeQuery<T = Record<string, any>>(sql: string): Promis
       complete: (err: any, _stmt: any, rows: T[]) => {
         if (err) {
           // A dead session must not poison every later request.
-          connection = null;
+          resetConnection();
           reject(err);
         } else {
           resolve(rows || []);
