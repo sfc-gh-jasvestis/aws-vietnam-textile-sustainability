@@ -54,6 +54,7 @@ export default function HomePage() {
         <div className="lg:col-span-1">
           <GeoMap
             country="vietnam"
+            labels={{ entity: 'Factories', event: 'Compliance Readings', alert: 'Non-Compliances' }}
             regions={data?.regions}
             markers={[{"label": "Ho Chi Minh City", "value": "HQ + export", "color": "blue", "size": "lg"}, {"label": "Binh Duong", "value": "Factory cluster", "color": "green", "size": "lg"}, {"label": "Long An", "value": "Dyeing & finishing", "color": "amber", "size": "md"}, {"label": "Hanoi", "value": "Northern factories", "color": "green", "size": "md"}, {"label": "Da Nang", "value": "Central hub", "color": "green", "size": "sm"}]}
             routes={[{"from": "Binh Duong", "to": "Ho Chi Minh City", "color": "#29B5E8"}]}
@@ -84,8 +85,13 @@ export default function HomePage() {
         columns={[
           { key: 'id', header: '#' },
           { key: 'name', header: 'Factory' },
+          { key: 'region', header: 'Region' },
           { key: 'status', header: 'Rating' },
-          { key: 'value', header: 'Score' },
+          { key: 'm1', header: 'Score' },
+          { key: 'm2', header: 'Carbon Footprint' },
+          { key: 'm3', header: 'Certifications' },
+          { key: 'events', header: 'Compliance Readings' },
+          { key: 'alerts', header: 'Non-Compliances' },
         ]}
         data={data?.entities || []}
         title="Sustainability Dashboard"
