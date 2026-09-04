@@ -36,9 +36,42 @@ function prettyMetricName(column: string): string {
   return column.replace(/^AVG_/, '').replace(/_/g, ' ');
 }
 
+/**
+ * Every AVG_* column on PERFORMANCE_SUMMARY, in declaration order. The map's
+ * drill-down panel shows these per region, so it needs the whole set rather
+ * than just the leading metric discoverMetricColumns() returns.
+ *
+ * Capped so a demo with a dozen metrics cannot overflow the panel.
+ */
+const MAX_DRILLDOWN_METRICS = 6;
+
+async function discoverPerfMetrics(): Promise<string[]> {
+  const rows = await executeQuery<{ COLUMN_NAME: string }>(`
+    SELECT COLUMN_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = '${SCHEMA}'
+      AND TABLE_NAME = 'PERFORMANCE_SUMMARY'
+      AND COLUMN_NAME LIKE 'AVG%'
+    ORDER BY ORDINAL_POSITION
+    LIMIT ${MAX_DRILLDOWN_METRICS}
+  `).catch(() => []);
+
+  return rows.map((r) => r.COLUMN_NAME);
+}
+
 export async function GET() {
   try {
-    const metric = await discoverMetricColumns();
+    const [metric, perfMetrics] = await Promise.all([
+      discoverMetricColumns(),
+      discoverPerfMetrics(),
+    ]);
+
+    // Per-region rollup for the map. Selecting the metric columns dynamically is
+    // what lets one route serve every demo, so the map shows the same regions the
+    // charts do instead of a hardcoded city list.
+    const regionMetricSelect = perfMetrics
+      .map((c) => `ROUND(AVG(${c}), 1) AS ${c}`)
+      .join(',\n               ');
 
     // KPI_SUMMARY is one row per KPI card, pre-formatted for display. It only
     // exists on demos whose seed data has been regenerated, so a failure here
@@ -49,7 +82,7 @@ export async function GET() {
       ORDER BY SORT_ORDER
     `).catch(() => []);
 
-    const [kpiRows, trendRows, regionRows, detailRows, categoryRows, entityRows] = await Promise.all([
+    const [kpiRows, trendRows, regionRows, catMetricRows, detailRows, categoryRows, regionAlertRows, entityRows, geoRows] = await Promise.all([
       executeQuery<Record<string, number>>(`
         SELECT COUNT(DISTINCT ENTITY_ID) AS TOTAL_ENTITIES,
                SUM(EVENT_COUNT)          AS TOTAL_EVENTS,
@@ -73,6 +106,18 @@ export async function GET() {
         ORDER BY COUNT DESC
       `),
 
+      // The same leading metric broken out by CATEGORY rather than REGION. Charts
+      // titled "... by Product Type" need a category x-axis; binding them to the
+      // region series above showed places under a product heading.
+      // Deliberately the same {category, count} shape as the region series so a
+      // page can switch between them without touching xKey or yKeys.
+      executeQuery<{ CATEGORY: string; COUNT: number }>(`
+        SELECT CATEGORY, ROUND(AVG(${metric.perf}), 1) AS COUNT
+        FROM ${SCHEMA}.PERFORMANCE_SUMMARY
+        GROUP BY CATEGORY
+        ORDER BY COUNT DESC
+      `),
+
       executeQuery<{ X: string; Y: number }>(`
         SELECT TO_CHAR(METRIC_DATE, 'Dy DD') AS X,
                ROUND(AVG(${metric.trend}), 1) AS Y
@@ -89,6 +134,15 @@ export async function GET() {
         ORDER BY VALUE DESC
       `),
 
+      // Region counterpart of breakdown, same {label, value} shape, for charts
+      // whose title names a place ("... by Province", "... by Grid Zone").
+      executeQuery<{ LABEL: string; VALUE: number }>(`
+        SELECT REGION AS LABEL, SUM(ALERT_COUNT) AS VALUE
+        FROM ${SCHEMA}.PERFORMANCE_SUMMARY
+        GROUP BY REGION
+        ORDER BY VALUE DESC
+      `),
+
       executeQuery<{ ID: string; NAME: string; REGION: string; VALUE: number; ALERTS: number }>(`
         SELECT ENTITY_ID AS ID, ENTITY_NAME AS NAME, REGION,
                ROUND(AVG(${metric.perf}), 1) AS VALUE,
@@ -98,10 +152,63 @@ export async function GET() {
         ORDER BY VALUE DESC
         LIMIT 20
       `),
+
+      executeQuery<Record<string, string | number>>(`
+        SELECT REGION,
+               COUNT(DISTINCT ENTITY_ID) AS ENTITIES,
+               SUM(EVENT_COUNT)          AS EVENTS,
+               SUM(ALERT_COUNT)          AS ALERTS${regionMetricSelect ? ',' : ''}
+               ${regionMetricSelect}
+        FROM ${SCHEMA}.PERFORMANCE_SUMMARY
+        GROUP BY REGION
+        ORDER BY EVENTS DESC
+      `),
     ]);
 
     // Derive a status band from alert volume relative to the busiest entity.
     const maxAlerts = Math.max(1, ...entityRows.map((r) => Number(r.ALERTS) || 0));
+
+    // Map markers, derived from the same PERFORMANCE_SUMMARY rows the charts read.
+    // Colour bands by alert rate so the map carries a health signal rather than
+    // being decorative. Size ranks by the leading metric - the same column the
+    // region bar chart plots - so marker size and bar height tell one story.
+    //
+    // Event counts are deliberately NOT used for size: the generated fact table
+    // spreads rows evenly across regions, so every marker would come out identical.
+    const leadOf = (r: Record<string, string | number>) =>
+      perfMetrics.length ? Number(r[perfMetrics[0]]) || 0 : Number(r.EVENTS) || 0;
+
+    const leadValues = geoRows.map(leadOf);
+    const leadMin = Math.min(...leadValues, Infinity);
+    const leadMax = Math.max(...leadValues, -Infinity);
+    const leadRange = leadMax - leadMin;
+
+    const maxRegionAlerts = Math.max(1, ...geoRows.map((r) => Number(r.ALERTS) || 0));
+
+    const regions = geoRows.map((r) => {
+      const alerts = Number(r.ALERTS) || 0;
+      const alertRatio = alerts / maxRegionAlerts;
+
+      // Normalise between the smallest and largest region rather than against the
+      // max alone: these metrics cluster tightly, so a plain ratio would put every
+      // region in the same band.
+      const rank = leadRange > 0 ? (leadOf(r) - leadMin) / leadRange : 0.5;
+
+      return {
+        region: String(r.REGION),
+        entities: Number(r.ENTITIES) || 0,
+        events: Number(r.EVENTS) || 0,
+        alerts,
+        value: leadOf(r),
+        status: alertRatio > 0.85 ? 'Critical' : alertRatio > 0.6 ? 'Watch' : 'Normal',
+        color: alertRatio > 0.85 ? 'red' : alertRatio > 0.6 ? 'amber' : 'green',
+        size: rank > 0.66 ? 'lg' : rank > 0.33 ? 'md' : 'sm',
+        metrics: perfMetrics.map((c) => ({
+          label: prettyMetricName(c),
+          value: Number(r[c]) || 0,
+        })),
+      };
+    });
 
     return NextResponse.json({
       kpis: kpiRows[0] || {},
@@ -113,8 +220,11 @@ export async function GET() {
       metricName: prettyMetricName(metric.perf),
       timeseries: trendRows.map((r) => ({ period: r.PERIOD, value: Number(r.VALUE) })),
       categories: regionRows.map((r) => ({ category: r.CATEGORY, count: Number(r.COUNT) })),
+      categoryMetric: catMetricRows.map((r) => ({ category: r.CATEGORY, count: Number(r.COUNT) })),
       detail: detailRows.map((r) => ({ x: r.X, y: Number(r.Y) })),
       breakdown: categoryRows.map((r) => ({ label: r.LABEL, value: Number(r.VALUE) })),
+      regionAlerts: regionAlertRows.map((r) => ({ label: r.LABEL, value: Number(r.VALUE) })),
+      regions,
       entities: entityRows.map((r) => {
         const alerts = Number(r.ALERTS) || 0;
         const ratio = alerts / maxAlerts;
