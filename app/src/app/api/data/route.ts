@@ -46,6 +46,9 @@ function prettyMetricName(column: string): string {
 const MAX_DRILLDOWN_METRICS = 6;
 
 async function discoverPerfMetrics(): Promise<string[]> {
+  // A failure here used to return [] silently, which emptied the map's metric
+  // list and made marker sizing fall back to a uniform column. Log it, and let
+  // the caller substitute the leading metric so the panel is never blank.
   const rows = await executeQuery<{ COLUMN_NAME: string }>(`
     SELECT COLUMN_NAME
     FROM INFORMATION_SCHEMA.COLUMNS
@@ -54,17 +57,26 @@ async function discoverPerfMetrics(): Promise<string[]> {
       AND COLUMN_NAME LIKE 'AVG%'
     ORDER BY ORDINAL_POSITION
     LIMIT ${MAX_DRILLDOWN_METRICS}
-  `).catch(() => []);
+  `).catch((e) => {
+    console.error('PERFORMANCE_SUMMARY metric discovery failed:', e);
+    return [] as { COLUMN_NAME: string }[];
+  });
 
   return rows.map((r) => r.COLUMN_NAME);
 }
 
 export async function GET() {
   try {
-    const [metric, perfMetrics] = await Promise.all([
+    const [metric, discovered] = await Promise.all([
       discoverMetricColumns(),
       discoverPerfMetrics(),
     ]);
+
+    // If discovery failed, fall back to the leading metric so the drill-down
+    // still shows something rather than an empty list.
+    const perfMetrics = discovered.length
+      ? discovered
+      : metric.perf.startsWith('AVG') ? [metric.perf] : [];
 
     // Per-region rollup for the map. Selecting the metric columns dynamically is
     // what lets one route serve every demo, so the map shows the same regions the
@@ -72,6 +84,9 @@ export async function GET() {
     const regionMetricSelect = perfMetrics
       .map((c) => `ROUND(AVG(${c}), 1) AS ${c}`)
       .join(',\n               ');
+
+    // The scorecard shows several metrics per entity, not just the leading one.
+    const entityMetricSelect = regionMetricSelect;
 
     // KPI_SUMMARY is one row per KPI card, pre-formatted for display. It only
     // exists on demos whose seed data has been regenerated, so a failure here
@@ -82,7 +97,7 @@ export async function GET() {
       ORDER BY SORT_ORDER
     `).catch(() => []);
 
-    const [kpiRows, trendRows, regionRows, catMetricRows, detailRows, categoryRows, regionAlertRows, entityRows, geoRows] = await Promise.all([
+    const [kpiRows, trendRows, regionRows, catMetricRows, detailRows, categoryRows, regionAlertRows, entityRows, regionCatRows, geoRows] = await Promise.all([
       executeQuery<Record<string, number>>(`
         SELECT COUNT(DISTINCT ENTITY_ID) AS TOTAL_ENTITIES,
                SUM(EVENT_COUNT)          AS TOTAL_EVENTS,
@@ -143,14 +158,27 @@ export async function GET() {
         ORDER BY VALUE DESC
       `),
 
-      executeQuery<{ ID: string; NAME: string; REGION: string; VALUE: number; ALERTS: number }>(`
-        SELECT ENTITY_ID AS ID, ENTITY_NAME AS NAME, REGION,
-               ROUND(AVG(${metric.perf}), 1) AS VALUE,
+      executeQuery<Record<string, string | number>>(`
+        SELECT ENTITY_ID AS ID, ENTITY_NAME AS NAME, REGION, CATEGORY,
+               SUM(EVENT_COUNT) AS EVENTS,
+               SUM(ALERT_COUNT) AS ALERTS${entityMetricSelect ? ',' : ''}
+               ${entityMetricSelect}
+        FROM ${SCHEMA}.PERFORMANCE_SUMMARY
+        GROUP BY ENTITY_ID, ENTITY_NAME, REGION, CATEGORY
+        ORDER BY ALERTS DESC
+        LIMIT 200
+      `),
+
+      // Region x category mix. This is what turns the drill-down from three
+      // numbers into a finding: one commodity usually owns most of a region's
+      // alerts, which is the point a demo wants to land.
+      executeQuery<Record<string, string | number>>(`
+        SELECT REGION, CATEGORY,
+               SUM(EVENT_COUNT) AS EVENTS,
                SUM(ALERT_COUNT) AS ALERTS
         FROM ${SCHEMA}.PERFORMANCE_SUMMARY
-        GROUP BY ENTITY_ID, ENTITY_NAME, REGION
-        ORDER BY VALUE DESC
-        LIMIT 20
+        GROUP BY REGION, CATEGORY
+        ORDER BY ALERTS DESC
       `),
 
       executeQuery<Record<string, string | number>>(`
@@ -185,8 +213,15 @@ export async function GET() {
 
     const maxRegionAlerts = Math.max(1, ...geoRows.map((r) => Number(r.ALERTS) || 0));
 
+    // Estate-wide alert rate, so a region can be expressed as a MULTIPLE of the
+    // national average ("2.1x") rather than a bare count nobody can calibrate.
+    const estateEvents = geoRows.reduce((a, r) => a + (Number(r.EVENTS) || 0), 0);
+    const estateAlerts = geoRows.reduce((a, r) => a + (Number(r.ALERTS) || 0), 0);
+    const estateRate = estateEvents > 0 ? estateAlerts / estateEvents : 0;
+
     const regions = geoRows.map((r) => {
       const alerts = Number(r.ALERTS) || 0;
+      const events = Number(r.EVENTS) || 0;
       const alertRatio = alerts / maxRegionAlerts;
 
       // Normalise between the smallest and largest region rather than against the
@@ -194,12 +229,39 @@ export async function GET() {
       // region in the same band.
       const rank = leadRange > 0 ? (leadOf(r) - leadMin) / leadRange : 0.5;
 
+      const rate = events > 0 ? alerts / events : 0;
+
+      // What is actually happening here, worst first, with each category's share
+      // of this region's alerts.
+      const mix = regionCatRows
+        .filter((c) => c.REGION === r.REGION)
+        .map((c) => ({
+          category: String(c.CATEGORY),
+          events: Number(c.EVENTS) || 0,
+          alerts: Number(c.ALERTS) || 0,
+          share: alerts > 0 ? Math.round(((Number(c.ALERTS) || 0) / alerts) * 100) : 0,
+        }))
+        .sort((a, b) => b.alerts - a.alerts);
+
+      // The sites driving it. Worst first - that is the one to click into next.
+      const sites = entityRows
+        .filter((e) => e.REGION === r.REGION)
+        .map((e) => ({
+          name: String(e.NAME),
+          alerts: Number(e.ALERTS) || 0,
+          value: perfMetrics.length ? Number(e[perfMetrics[0]]) || 0 : 0,
+        }))
+        .sort((a, b) => b.alerts - a.alerts)
+        .slice(0, 3);
+
       return {
         region: String(r.REGION),
         entities: Number(r.ENTITIES) || 0,
-        events: Number(r.EVENTS) || 0,
+        events,
         alerts,
         value: leadOf(r),
+        alertRate: Math.round(rate * 1000) / 10,
+        rateVsEstate: estateRate > 0 ? Math.round((rate / estateRate) * 10) / 10 : 1,
         status: alertRatio > 0.85 ? 'Critical' : alertRatio > 0.6 ? 'Watch' : 'Normal',
         color: alertRatio > 0.85 ? 'red' : alertRatio > 0.6 ? 'amber' : 'green',
         size: rank > 0.66 ? 'lg' : rank > 0.33 ? 'md' : 'sm',
@@ -207,6 +269,8 @@ export async function GET() {
           label: prettyMetricName(c),
           value: Number(r[c]) || 0,
         })),
+        mix,
+        sites,
       };
     });
 
@@ -228,15 +292,25 @@ export async function GET() {
       entities: entityRows.map((r) => {
         const alerts = Number(r.ALERTS) || 0;
         const ratio = alerts / maxAlerts;
-        return {
-          id: r.ID,
-          name: r.NAME,
-          region: r.REGION,
+        const row: Record<string, string | number> = {
+          id: String(r.ID),
+          name: String(r.NAME),
+          region: String(r.REGION),
+          category: String(r.CATEGORY ?? ''),
           status: ratio > 0.9 ? 'Critical' : ratio > 0.7 ? 'Watch' : 'Healthy',
-          value: Number(r.VALUE),
+          value: perfMetrics.length ? Number(r[perfMetrics[0]]) || 0 : 0,
+          events: Number(r.EVENTS) || 0,
           alerts,
         };
+        // Flatten every metric under a stable key so a generated DataTable can
+        // address them (m1 is the leading metric, same as `value`). metricLabels
+        // below supplies the matching headers.
+        perfMetrics.forEach((c, i) => {
+          row[`m${i + 1}`] = Number(r[c]) || 0;
+        });
+        return row;
       }),
+      metricLabels: perfMetrics.map(prettyMetricName),
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
