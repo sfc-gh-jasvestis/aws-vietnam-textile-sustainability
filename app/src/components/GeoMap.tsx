@@ -50,12 +50,32 @@ interface RegionDatum {
   color?: string;
   size?: string;
   metrics?: { label: string; value: number }[];
+  /** Alerts as a percentage of events in this region. */
+  alertRate?: number;
+  /** That rate as a multiple of the estate average. 2.1 means twice as bad. */
+  rateVsEstate?: number;
+  /** Category mix within the region, worst first, with share of its alerts. */
+  mix?: { category: string; events: number; alerts: number; share: number }[];
+  /** The worst few sites in this region. */
+  sites?: { name: string; alerts: number; value: number }[];
+}
+
+/**
+ * Domain nouns so each demo counts its own things - "Suppliers / Inspections /
+ * NCRs" rather than a generic "Sites / Events / Alerts". Generated per demo from
+ * the page's own table headers and the RAW event table name.
+ */
+interface MapLabels {
+  entity?: string;
+  event?: string;
+  alert?: string;
 }
 
 interface GeoMapProps {
   country: 'thailand' | 'indonesia' | 'malaysia' | 'philippines' | 'vietnam';
   markers?: MapMarker[];
   regions?: RegionDatum[];
+  labels?: MapLabels;
   routes?: MapRoute[];
   title?: string;
   height?: number;
@@ -101,6 +121,7 @@ export function GeoMap({
   country,
   markers = [],
   regions = [],
+  labels = {},
   routes = [],
   title,
   height = 340,
@@ -111,13 +132,16 @@ export function GeoMap({
   if (!geo) return null;
 
   const live = regions.length > 0;
+  const nEntity = labels.entity || 'Sites';
+  const nEvent = labels.event || 'Events';
+  const nAlert = labels.alert || 'Alerts';
 
   // Live region data supersedes the static marker list entirely, so the map shows
   // the same places the charts do. The static list is only a first-paint fallback.
   const shown: MapMarker[] = live
     ? regions.map((r) => ({
         label: r.region,
-        value: [r.status, r.entities ? `${r.entities} sites` : null]
+        value: [r.status, r.entities ? `${r.entities} ${nEntity.toLowerCase()}` : null]
           .filter(Boolean)
           .join(' \u00b7 '),
         color: isColor(r.color) ? r.color : 'blue',
@@ -314,7 +338,7 @@ export function GeoMap({
         {/* Readout: the drill-down for a selected place, else every marker legible
             without hovering. */}
         {placed.length > 0 && (
-          <div className="w-full shrink-0 sm:w-52">
+          <div className={`w-full shrink-0 ${detail ? 'sm:w-64' : 'sm:w-52'}`}>
             {detail ? (
               <div>
                 <button
@@ -332,27 +356,47 @@ export function GeoMap({
                   />
                   <span className="truncate text-sm font-bold text-slate-800">{detail.region}</span>
                 </div>
-                {detail.status && (
-                  <div className="mb-2 text-[11px] text-slate-500">{detail.status}</div>
-                )}
+
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  {detail.status && (
+                    <span className="text-[11px] text-slate-500">{detail.status}</span>
+                  )}
+                  {/* The calibration line: a bare alert count means nothing without
+                      knowing what normal looks like. */}
+                  {detail.rateVsEstate !== undefined && detail.rateVsEstate >= 1.2 && (
+                    <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
+                      {detail.rateVsEstate}&times; avg {nAlert.toLowerCase()}
+                    </span>
+                  )}
+                  {detail.rateVsEstate !== undefined && detail.rateVsEstate <= 0.8 && (
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
+                      {detail.rateVsEstate}&times; avg {nAlert.toLowerCase()}
+                    </span>
+                  )}
+                </div>
 
                 <dl className="space-y-1 border-t border-slate-100 pt-2">
                   {detail.entities !== undefined && (
                     <div className="flex items-baseline justify-between gap-2">
-                      <dt className="text-[11px] text-slate-500">Sites</dt>
+                      <dt className="text-[11px] text-slate-500">{nEntity}</dt>
                       <dd className="text-xs font-semibold text-slate-700">{fmt(detail.entities)}</dd>
                     </div>
                   )}
                   {detail.events !== undefined && (
                     <div className="flex items-baseline justify-between gap-2">
-                      <dt className="text-[11px] text-slate-500">Events</dt>
-                      <dd className="text-xs font-semibold text-slate-700">{fmt(detail.events)}</dd>
+                      <dt className="min-w-0 truncate text-[11px] text-slate-500" title={nEvent}>{nEvent}</dt>
+                      <dd className="shrink-0 text-xs font-semibold text-slate-700">{fmt(detail.events)}</dd>
                     </div>
                   )}
                   {detail.alerts !== undefined && (
                     <div className="flex items-baseline justify-between gap-2">
-                      <dt className="text-[11px] text-slate-500">Alerts</dt>
-                      <dd className="text-xs font-semibold text-slate-700">{fmt(detail.alerts)}</dd>
+                      <dt className="min-w-0 truncate text-[11px] text-slate-500" title={nAlert}>{nAlert}</dt>
+                      <dd className="shrink-0 text-xs font-semibold text-slate-700">
+                        {fmt(detail.alerts)}
+                        {detail.alertRate !== undefined && (
+                          <span className="ml-1 font-normal text-slate-400">{detail.alertRate}%</span>
+                        )}
+                      </dd>
                     </div>
                   )}
                   {(detail.metrics || []).map((k) => (
@@ -364,6 +408,59 @@ export function GeoMap({
                     </div>
                   ))}
                 </dl>
+
+                {/* Where the problem actually sits. Usually one category owns most
+                    of a region's alerts, which is the finding worth narrating. */}
+                {detail.mix && detail.mix.length > 0 && (
+                  <div className="mt-3 border-t border-slate-100 pt-2">
+                    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      {nAlert} by category
+                    </div>
+                    <ul className="space-y-1">
+                      {detail.mix.slice(0, 4).map((c) => (
+                        <li key={c.category}>
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="min-w-0 truncate text-[11px] text-slate-600" title={c.category}>
+                              {c.category}
+                            </span>
+                            <span className="shrink-0 text-[11px] font-semibold text-slate-700">
+                              {c.share}%
+                            </span>
+                          </div>
+                          <div className="mt-0.5 h-1 w-full overflow-hidden rounded bg-slate-100">
+                            <div
+                              className="h-full rounded"
+                              style={{
+                                width: `${Math.max(2, c.share)}%`,
+                                backgroundColor: COLOR_MAP[isColor(detail.color) ? detail.color : 'blue'],
+                              }}
+                            />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {detail.sites && detail.sites.length > 0 && (
+                  <div className="mt-3 border-t border-slate-100 pt-2">
+                    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Highest {nAlert.toLowerCase()}
+                    </div>
+                    <ul className="space-y-1">
+                      {detail.sites.map((s) => (
+                        <li key={s.name} className="flex items-baseline justify-between gap-2">
+                          <span className="min-w-0 truncate text-[11px] text-slate-600" title={s.name}>
+                            {s.name}
+                          </span>
+                          <span className="shrink-0 text-[11px] font-semibold text-slate-700">
+                            {fmt(s.alerts)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               <>
