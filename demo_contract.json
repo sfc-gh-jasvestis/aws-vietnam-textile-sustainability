@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "repo": "aws-vietnam-textile-sustainability",
+  "operation": "on-demand",
+  "data_classification": "synthetic demonstration only",
+  "currency": "USD",
+  "grains": {
+    "RAW.MILLS": "one row per textile dyeing and finishing mill",
+    "RAW.MILL_DAILY": "one row per mill per day (90 days)",
+    "RAW.STEAM_TRAP_SURVEY": "one row per mill (steam trap leak survey snapshot)",
+    "CURATED.PERFORMANCE_SUMMARY": "one row per mill",
+    "CURATED.TREND_ANALYSIS": "one row per day",
+    "CURATED.EXCEEDANCE_CAUSES": "one row per root cause",
+    "CURATED.KPI_SUMMARY": "one row per KPI",
+    "ML.EXCEEDANCE_RISK_SCORES": "one row per mill (latest day)"
+  },
+  "metrics": {
+    "Effluent Within Threshold": "100 * SUM(SAMPLES_IN_LIMIT) / SUM(WATER_SAMPLES) (internal demo threshold, not a regulatory limit)",
+    "Environmental Exceedances": "SUM(EXCEEDANCE_COUNT)",
+    "Emissions Intensity": "1000 * SUM(CO2E_TONNES) / SUM(THROUGHPUT_TONNES) (kg CO2e per tonne of fabric processed)",
+    "Total Emissions (t CO2e)": "SUM(CO2E_TONNES)",
+    "Effluent Treatment Uptime": "100 * SUM(OPERATING_HOURS) / SUM(PLANNED_HOURS) (on-site effluent treatment plant, ETP)",
+    "Mills Monitored": "COUNT(RAW.MILLS)",
+    "Steam Trap Leaks Closed": "100 * SUM(LEAST(LEAKS_CLOSED, LEAKS_DETECTED)) / SUM(LEAKS_DETECTED)",
+    "Community Grievances": "SUM(GRIEVANCES)"
+  },
+  "chart_bindings": {
+    "daily_effluent_within_threshold": [
+      "CURATED.TREND_ANALYSIS.METRIC_DATE",
+      "IN_LIMIT_PCT"
+    ],
+    "samples_over_threshold_by_cause": [
+      "CURATED.EXCEEDANCE_CAUSES.ROOT_CAUSE",
+      "SAMPLES_OVER_LIMIT"
+    ],
+    "inspection_vs_effluent": [
+      "CURATED.PERFORMANCE_SUMMARY.INSPECTION_COMPLETION_PCT",
+      "IN_LIMIT_PCT"
+    ],
+    "quicksight_exceedance_risk": [
+      "ENTITY_ID",
+      "MAX(EXCEEDANCE_PROB_7D)"
+    ]
+  },
+  "freshness": "MAX(EVENT_DATE) is an observation watermark; requestedAt is not freshness",
+  "required_capabilities": {
+    "core_pipeline": "Curated KPIs reconcile to a RAW recomputation (run_core.py checks this on every build)",
+    "exceedance_risk_model": "Snowflake ML CLASSIFICATION of P(environmental exceedance in next 7 days) per mill, evaluated on an out-of-time holdout",
+    "forecast_and_anomaly": "14-day group-wide CO2e emissions FORECAST; effluent COD ANOMALY_DETECTION (train 75 days, detect last 15)",
+    "search": "Cortex Search SEARCH.ESG_SOP_SEARCH over synthetic exceedance-response SOPs (one per mill type and cause)",
+    "semantic_analytics": "Semantic view APP.ESG_ANALYTICS and Cortex Agent APP.ESG_AGENT using analyst + search tools",
+    "grounded_ai": "Agent answers return generated SQL and SOP citations; the action memo uses only KPI, exceedance, cause and risk rows",
+    "quicksight": "DIRECT_QUERY dashboard (mills with observations, daily effluent within threshold, exceedances by mill, exceedance risk, IoT message count) through a read-only Snowflake service user",
+    "quicksight_q": "Amazon Q topic over the curated datasets for natural-language questions",
+    "aws_ingestion": "IoT Core rule -> S3 -> Snowpipe AUTO_INGEST into RAW.LIVE_TELEMETRY",
+    "notifications": "APP.LIVE_ALARM_ALERT logs new ALARM readings to APP.ALERT_LOG and emails via SYSTEM$SEND_EMAIL; alert and tasks suspended between demos",
+    "orchestration": "Task graph APP.TASK_REFRESH_CURATED -> APP.TASK_RESCORE_RISK run on demand (EXECUTE TASK)",
+    "app_deployment": "SPCS service APP.VN_TEXTILE_SUSTAINABILITY_APP; routes /api/data, /api/ask, /api/agent"
+  },
+  "builds": {
+    "snowflake": {
+      "database": "VIETNAM_TEXTILE_SUSTAINABILITY_SNOWFLAKE",
+      "app_setting": "DEMO_PLATFORM=snowflake",
+      "live_telemetry": "APP.SIMULATE_TELEMETRY(n)",
+      "memo": "Cortex AI_COMPLETE (claude-sonnet-4-5)"
+    },
+    "aws": {
+      "database": "VIETNAM_TEXTILE_SUSTAINABILITY_AWS",
+      "app_setting": "DEMO_PLATFORM=aws",
+      "live_telemetry": "AWS IoT Core -> S3 -> Snowpipe",
+      "memo": "Amazon Bedrock Claude Sonnet 4.5 via APP.BEDROCK_GENERATE",
+      "capabilities": "see required_capabilities"
+    }
+  }
+}
